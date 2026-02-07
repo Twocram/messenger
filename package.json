@@ -9,10 +9,13 @@
     "dev:frontend": "bun run --filter @messsenger/frontend dev",
     "dev:shared": "bun run --filter @messsenger/shared dev",
     "build": "bun run --filter '*' build",
-    "typecheck": "bun run --filter '*' typecheck"
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "oxlint": "^1.43.0",
     "typescript": "^5.7.0"
   }
 }
