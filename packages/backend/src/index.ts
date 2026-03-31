@@ -1,43 +1,31 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { count } from "drizzle-orm";
+
+import { closeDatabaseConnection, db, getDatabaseStatus, schema } from "./db";
+import { authModule } from "./modules/auth";
 
 const port = Number(process.env.PORT ?? "3000");
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@localhost:5432/messenger";
-
-const db = new Bun.SQL(databaseUrl, {
-  max: 10,
-  idleTimeout: 30,
-});
-
-async function getDatabaseStatus() {
-  const result = await db<
-    {
-      currentDatabase: string;
-      now: string;
-    }[]
-  >`select current_database() as "currentDatabase", now()::text as "now"`;
-
-  const [row] = result;
-
-  if (!row) {
-    throw new Error("Database health check returned no rows");
-  }
-
-  return row;
-}
 
 await getDatabaseStatus();
 
 const app = new Elysia()
   .use(cors())
+  .use(authModule)
   .get("/", async () => {
     const database = await getDatabaseStatus();
 
     return {
       message: "messenger API",
       database: database.currentDatabase,
+    };
+  })
+  .get("/users", async () => {
+    const result = await db.select({ value: count() }).from(schema.users);
+    const totalUsers = result[0]?.value ?? 0;
+
+    return {
+      totalUsers,
     };
   })
   .get("/health", async ({ set }) => {
@@ -64,12 +52,12 @@ const app = new Elysia()
 console.log(`Backend running at http://localhost:${app.server?.port}`);
 
 process.on("SIGINT", async () => {
-  await db.end();
+  await closeDatabaseConnection();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await db.end();
+  await closeDatabaseConnection();
   process.exit(0);
 });
 

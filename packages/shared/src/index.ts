@@ -20,6 +20,28 @@ export interface LoginDto {
   password: string;
 }
 
+export interface RefreshTokenDto {
+  refreshToken: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  avatarUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthResponse extends AuthTokens {
+  user: AuthUser;
+}
+
 // ========== Message ==========
 
 export interface Message {
