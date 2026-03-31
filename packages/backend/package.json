@@ -1,5 +1,5 @@
 {
-  "name": "@messsenger/backend",
+  "name": "@messenger/backend",
   "version": "0.0.1",
   "type": "module",
   "scripts": {

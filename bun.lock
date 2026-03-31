@@ -3,15 +3,16 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "messsenger",
+      "name": "messenger",
       "devDependencies": {
         "@types/bun": "latest",
+        "bun-types": "^1.3.8",
         "oxlint": "^1.43.0",
         "typescript": "^5.7.0",
       },
     },
     "packages/backend": {
-      "name": "@messsenger/backend",
+      "name": "@messenger/backend",
       "version": "0.0.1",
       "dependencies": {
         "@elysiajs/cors": "^1.2.0",
@@ -23,7 +24,7 @@
       },
     },
     "packages/frontend": {
-      "name": "@messsenger/frontend",
+      "name": "@messenger/frontend",
       "version": "0.0.0",
       "dependencies": {
         "@tailwindcss/vite": "^4.1.18",
@@ -52,7 +53,7 @@
       },
     },
     "packages/shared": {
-      "name": "@messsenger/shared",
+      "name": "@messenger/shared",
       "version": "0.0.1",
       "devDependencies": {
         "typescript": "^5.7.0",
@@ -198,11 +199,11 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@messsenger/backend": ["@messsenger/backend@workspace:packages/backend"],
+    "@messenger/backend": ["@messenger/backend@workspace:packages/backend"],
 
-    "@messsenger/frontend": ["@messsenger/frontend@workspace:packages/frontend"],
+    "@messenger/frontend": ["@messenger/frontend@workspace:packages/frontend"],
 
-    "@messsenger/shared": ["@messsenger/shared@workspace:packages/shared"],
+    "@messenger/shared": ["@messenger/shared@workspace:packages/shared"],
 
     "@oxlint/darwin-arm64": ["@oxlint/darwin-arm64@1.43.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-C/GhObv/pQZg34NOzB6Mk8x0wc9AKj8fXzJF8ZRKTsBPyHusC6AZ6bba0QG0TUufw1KWuD0j++oebQfWeiFXNw=="],
 
