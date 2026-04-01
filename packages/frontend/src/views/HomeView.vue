@@ -12,7 +12,7 @@ const isLoadingProfile = computed(() => asyncStatus.value === 'loading')
 const isLoggingOut = computed(() => logoutMutation.asyncStatus.value === 'loading')
 
 async function signOut() {
-  await logoutMutation.mutate()
+  logoutMutation.mutate()
   await router.push({ name: 'login' })
 }
 </script>
@@ -25,14 +25,14 @@ async function signOut() {
         <h1 class="text-3xl font-semibold">Главная</h1>
       </div>
 
-      <Button
-        v-if="state.data"
-        variant="outline"
-        :disabled="isLoggingOut"
-        @click="signOut"
-      >
-        {{ isLoggingOut ? 'Выход...' : 'Выйти' }}
-      </Button>
+      <div v-if="state.data" class="flex gap-2">
+        <RouterLink :to="{ name: 'chat' }">
+          <Button>Перейти к чатам</Button>
+        </RouterLink>
+        <Button variant="outline" :disabled="isLoggingOut" @click="signOut">
+          {{ isLoggingOut ? 'Выход...' : 'Выйти' }}
+        </Button>
+      </div>
     </div>
 
     <section class="rounded-xl border p-6">
