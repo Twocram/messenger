@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/bun-sql";
+import { migrate } from "drizzle-orm/bun-sql/migrator";
 
 import * as schema from "./schema";
 
@@ -12,6 +13,12 @@ export const sql = new Bun.SQL(databaseUrl, {
 });
 
 export const db = drizzle(sql, { schema });
+
+export async function runMigrations() {
+  await migrate(db, {
+    migrationsFolder: `${import.meta.dir}/../../drizzle`,
+  });
+}
 
 export async function getDatabaseStatus() {
   const result = await sql<

@@ -16,8 +16,6 @@ export const authTokensModel = t.Object({
 
 export const authResponseModel = t.Object({
   user: authUserModel,
-  accessToken: t.String(),
-  refreshToken: t.String(),
 });
 
 export const authErrorModel = t.Object({
@@ -35,10 +33,6 @@ export const loginBodyModel = t.Object({
   password: t.String({ minLength: 1 }),
 });
 
-export const refreshTokenBodyModel = t.Object({
-  refreshToken: t.String({ minLength: 1 }),
-});
-
 export const logoutResponseModel = t.Object({
   success: t.Boolean(),
 });
@@ -47,4 +41,3 @@ export type AuthUserModel = Static<typeof authUserModel>;
 export type AuthResponseModel = Static<typeof authResponseModel>;
 export type RegisterBodyModel = Static<typeof registerBodyModel>;
 export type LoginBodyModel = Static<typeof loginBodyModel>;
-export type RefreshTokenBodyModel = Static<typeof refreshTokenBodyModel>;

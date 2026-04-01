@@ -10,7 +10,6 @@ import {
 import { db, schema } from "../../db";
 import type {
   LoginBodyModel,
-  RefreshTokenBodyModel,
   RegisterBodyModel,
 } from "./model";
 
@@ -294,14 +293,14 @@ export abstract class Auth {
   }
 
   static async refresh(
-    input: RefreshTokenBodyModel,
+    refreshToken: string,
     metadata?: { userAgent?: string | null; ipAddress?: string | null },
   ) {
-    if (!input.refreshToken) {
+    if (!refreshToken) {
       throw new AuthError("Refresh token is required", 400);
     }
 
-    const payload = await this.verifyJwt(input.refreshToken, refreshTokenSecret);
+    const payload = await this.verifyJwt(refreshToken, refreshTokenSecret);
 
     if (payload.type !== "refresh" || !payload.jti) {
       throw new AuthError("Invalid refresh token", 401);
@@ -321,7 +320,7 @@ export abstract class Auth {
       throw new AuthError("Refresh session is invalid or expired", 401);
     }
 
-    const tokenHash = await this.hashRefreshToken(input.refreshToken);
+    const tokenHash = await this.hashRefreshToken(refreshToken);
 
     if (session.refreshTokenHash !== tokenHash) {
       await this.revokeSessionById(session.id);
@@ -338,12 +337,12 @@ export abstract class Auth {
     };
   }
 
-  static async logout(input: RefreshTokenBodyModel) {
-    if (!input.refreshToken) {
+  static async logout(refreshToken: string) {
+    if (!refreshToken) {
       throw new AuthError("Refresh token is required", 400);
     }
 
-    const payload = await this.verifyJwt(input.refreshToken, refreshTokenSecret);
+    const payload = await this.verifyJwt(refreshToken, refreshTokenSecret);
 
     if (payload.type !== "refresh" || !payload.jti) {
       throw new AuthError("Invalid refresh token", 401);
