@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   pgTable,
   text,
@@ -59,3 +60,71 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type AuthSession = typeof authSessions.$inferSelect;
 export type NewAuthSession = typeof authSessions.$inferInsert;
+
+export const chats = pgTable("chats", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name"),
+  isGroup: boolean("is_group").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const chatMembers = pgTable(
+  "chat_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    chatId: uuid("chat_id")
+      .notNull()
+      .references(() => chats.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("chat_members_chat_id_user_id_unique").on(
+      table.chatId,
+      table.userId,
+    ),
+    index("chat_members_chat_id_idx").on(table.chatId),
+    index("chat_members_user_id_idx").on(table.userId),
+  ],
+);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    chatId: uuid("chat_id")
+      .notNull()
+      .references(() => chats.id, { onDelete: "cascade" }),
+    senderId: uuid("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("messages_chat_id_idx").on(table.chatId),
+    index("messages_sender_id_idx").on(table.senderId),
+    index("messages_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type Chat = typeof chats.$inferSelect;
+export type NewChat = typeof chats.$inferInsert;
+export type ChatMember = typeof chatMembers.$inferSelect;
+export type NewChatMember = typeof chatMembers.$inferInsert;
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;

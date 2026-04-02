@@ -15,6 +15,13 @@
       "when": 1774996537078,
       "tag": "0001_naive_loki",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775052187958,
+      "tag": "0002_chunky_dust",
+      "breakpoints": true
     }
   ]
 }

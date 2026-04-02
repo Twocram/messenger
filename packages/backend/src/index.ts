@@ -10,6 +10,8 @@ import {
   schema,
 } from "./db";
 import { authModule } from "./modules/auth";
+import { chatModule } from "./modules/chat";
+import { messageModule } from "./modules/message";
 
 const port = Number(process.env.PORT ?? "3000");
 const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
@@ -25,6 +27,8 @@ const app = new Elysia()
     }),
   )
   .use(authModule)
+  .use(chatModule)
+  .use(messageModule)
   .get("/", async () => {
     const database = await getDatabaseStatus();
 
