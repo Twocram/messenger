@@ -77,19 +77,19 @@ export function useChatMessagesSocket(chatId: () => string | null) {
     socketStatus.value = 'connecting'
     socket = new WebSocket(getWebSocketUrl(`/chats/${nextChatId}/messages/ws`))
 
-    socket.onopen = () => {
+    socket.addEventListener('open', () => {
       socketStatus.value = 'open'
-    }
+    })
 
-    socket.onclose = () => {
+    socket.addEventListener('close', () => {
       socketStatus.value = 'closed'
-    }
+    })
 
-    socket.onerror = () => {
+    socket.addEventListener('error', () => {
       socketStatus.value = 'closed'
-    }
+    })
 
-    socket.onmessage = (event) => {
+    socket.addEventListener('message', (event) => {
       const payload = JSON.parse(event.data) as
         | { type: 'message:new'; payload: Message }
         | { type: 'message:edit'; payload: Message }
@@ -111,7 +111,7 @@ export function useChatMessagesSocket(chatId: () => string | null) {
           return oldMessages.map((m) => (m.id === payload.payload.id ? payload.payload : m))
         })
       }
-    }
+    })
   }
 
   watch(

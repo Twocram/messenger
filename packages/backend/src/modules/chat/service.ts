@@ -102,10 +102,11 @@ export abstract class ChatService {
       membersByChat.set(chatId, list);
     }
 
-    return chats.map((chat) => ({
-      ...chat,
-      members: membersByChat.get(chat.id) ?? [],
-    }));
+    return chats.map((chat) =>
+      Object.assign(chat, {
+        members: membersByChat.get(chat.id) ?? [],
+      }),
+    );
   }
 
   static async getChatById(chatId: string, userId: string) {
