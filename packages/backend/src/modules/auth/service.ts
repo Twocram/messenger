@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm";
 
 import { db, schema } from "../../db";
+import { redis } from "../../db/redis";
 import type {
   LoginBodyModel,
   RegisterBodyModel,
@@ -200,7 +201,23 @@ export abstract class Auth {
       .where(eq(schema.authSessions.id, sessionId));
   }
 
+  private static userCacheKey(userId: string) {
+    return `user:${userId}`;
+  }
+
   private static async getUserById(userId: string) {
+    const cacheKey = this.userCacheKey(userId);
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      const parsed = JSON.parse(cached) as typeof schema.users.$inferSelect;
+      return {
+        ...parsed,
+        createdAt: new Date(parsed.createdAt),
+        updatedAt: new Date(parsed.updatedAt),
+      };
+    }
+
     const user = await db.query.users.findFirst({
       where: eq(schema.users.id, userId),
     });
@@ -208,6 +225,9 @@ export abstract class Auth {
     if (!user) {
       throw new AuthError("User not found", 404);
     }
+
+    await redis.set(cacheKey, JSON.stringify(user));
+    await redis.expire(cacheKey, 300);
 
     return user;
   }
