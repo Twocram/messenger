@@ -25,11 +25,10 @@ jobs:
         run: bun run lint
 
       - name: Typecheck (backend)
-        run: bun run typecheck --filter @messenger/backend
+        run: bun run --filter @messenger/backend typecheck
 
       - name: Typecheck (shared)
-        run: bun run typecheck --filter @messenger/shared
+        run: bun run --filter @messenger/shared typecheck
 
       - name: Typecheck (frontend)
-        working-directory: packages/frontend
-        run: bun run type-check
+        run: bun run --filter @messenger/frontend type-check
