@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck (backend)
+        run: bun run typecheck --filter @messenger/backend
+
+      - name: Typecheck (shared)
+        run: bun run typecheck --filter @messenger/shared
+
+      - name: Typecheck (frontend)
+        working-directory: packages/frontend
+        run: bun run type-check
