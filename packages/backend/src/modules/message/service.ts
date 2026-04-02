@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import type { ElysiaWS } from "elysia/ws";
 
 import { db, schema } from "../../db";
-import type { SendMessageBodyModel } from "./model";
+import type { EditMessageBodyModel, SendMessageBodyModel } from "./model";
 
 export class MessageError extends Error {
   constructor(
@@ -12,6 +12,16 @@ export class MessageError extends Error {
     super(message);
   }
 }
+
+type MessageRow = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  content: string;
+  editedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export abstract class MessageService {
   private static chatConnections = new Map<
@@ -35,9 +45,42 @@ export abstract class MessageService {
       throw new Error("Failed to send message");
     }
 
-    this.broadcastMessage(chatId, message);
+    this.broadcast(chatId, "message:new", message);
 
     return message;
+  }
+
+  static async editMessage(
+    messageId: string,
+    senderId: string,
+    input: EditMessageBodyModel,
+  ) {
+    const existing = await db.query.messages.findFirst({
+      where: eq(schema.messages.id, messageId),
+    });
+
+    if (!existing) {
+      throw new MessageError("Message not found", 404);
+    }
+
+    if (existing.senderId !== senderId) {
+      throw new MessageError("Forbidden", 403);
+    }
+
+    const now = new Date();
+    const [updated] = await db
+      .update(schema.messages)
+      .set({ content: input.content, editedAt: now, updatedAt: now })
+      .where(eq(schema.messages.id, messageId))
+      .returning();
+
+    if (!updated) {
+      throw new Error("Failed to update message");
+    }
+
+    this.broadcast(updated.chatId, "message:edit", updated);
+
+    return updated;
   }
 
   static async getChatMessages(chatId: string, userId: string) {
@@ -64,9 +107,7 @@ export abstract class MessageService {
   static unsubscribeFromChat(chatId: string, socketId: string) {
     const connections = this.chatConnections.get(chatId);
 
-    if (!connections) {
-      return;
-    }
+    if (!connections) return;
 
     connections.delete(socketId);
 
@@ -88,30 +129,17 @@ export abstract class MessageService {
     }
   }
 
-  private static broadcastMessage(
+  private static broadcast(
     chatId: string,
-    message: Awaited<ReturnType<typeof db.query.messages.findFirst>> extends infer _
-      ? {
-          id: string;
-          chatId: string;
-          senderId: string;
-          content: string;
-          createdAt: Date;
-          updatedAt: Date;
-        }
-      : never,
+    type: "message:new" | "message:edit",
+    message: MessageRow,
   ) {
     const connections = this.chatConnections.get(chatId);
 
-    if (!connections) {
-      return;
-    }
+    if (!connections) return;
 
     for (const ws of connections.values()) {
-      ws.send({
-        type: "message:new",
-        payload: message,
-      });
+      ws.send({ type, payload: message });
     }
   }
 }

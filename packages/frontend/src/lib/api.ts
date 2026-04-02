@@ -122,14 +122,18 @@ export async function apiGet<T>(url: string) {
 export async function apiPost<TResponse, TBody>(url: string, body: TBody) {
   try {
     return await api
-      .post(
-        url,
-        body === undefined
-          ? undefined
-          : {
-              json: body,
-            },
-      )
+      .post(url, body === undefined ? undefined : { json: body })
+      .json<TResponse>()
+  }
+  catch (error) {
+    throw await toApiError(error)
+  }
+}
+
+export async function apiPatch<TResponse, TBody>(url: string, body: TBody) {
+  try {
+    return await api
+      .patch(url, body === undefined ? undefined : { json: body })
       .json<TResponse>()
   }
   catch (error) {

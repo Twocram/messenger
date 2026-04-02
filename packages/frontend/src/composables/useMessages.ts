@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import { getChatMessages, sendMessage, type Message } from '@/api/messages'
+import { editMessage, getChatMessages, sendMessage, type Message } from '@/api/messages'
 import { getWebSocketUrl } from '@/lib/websocket'
 
 export function useChatMessagesQuery(chatId: () => string | null) {
@@ -41,6 +41,23 @@ export function useSendMessageMutation() {
   })
 }
 
+export function useEditMessageMutation() {
+  const queryCache = useQueryCache()
+
+  return useMutation({
+    mutation: async (payload: { chatId: string; messageId: string; content: string }) => {
+      return editMessage(payload.chatId, payload.messageId, { content: payload.content })
+    },
+    onSuccess: (message, payload) => {
+      queryCache.setQueryData<Message[]>(['messages', payload.chatId], (oldMessages) => {
+        if (!oldMessages) return []
+
+        return oldMessages.map((m) => (m.id === message.id ? message : m))
+      })
+    },
+  })
+}
+
 export function useChatMessagesSocket(chatId: () => string | null) {
   const queryCache = useQueryCache()
   const socketStatus = ref<'closed' | 'connecting' | 'open'>('closed')
@@ -73,24 +90,27 @@ export function useChatMessagesSocket(chatId: () => string | null) {
     }
 
     socket.onmessage = (event) => {
-      const payload = JSON.parse(event.data) as {
-        type: 'message:new'
-        payload: Message
+      const payload = JSON.parse(event.data) as
+        | { type: 'message:new'; payload: Message }
+        | { type: 'message:edit'; payload: Message }
+
+      if (payload.type === 'message:new') {
+        queryCache.setQueryData<Message[]>(['messages', nextChatId], (oldMessages) => {
+          const messages = oldMessages ?? []
+
+          if (messages.some((message) => message.id === payload.payload.id)) {
+            return messages
+          }
+
+          return [...messages, payload.payload]
+        })
+      } else if (payload.type === 'message:edit') {
+        queryCache.setQueryData<Message[]>(['messages', nextChatId], (oldMessages) => {
+          if (!oldMessages) return []
+
+          return oldMessages.map((m) => (m.id === payload.payload.id ? payload.payload : m))
+        })
       }
-
-      if (payload.type !== 'message:new') {
-        return
-      }
-
-      queryCache.setQueryData<Message[]>(['messages', nextChatId], (oldMessages) => {
-        const messages = oldMessages ?? []
-
-        if (messages.some((message) => message.id === payload.payload.id)) {
-          return messages
-        }
-
-        return [...messages, payload.payload]
-      })
     }
   }
 

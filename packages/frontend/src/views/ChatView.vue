@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { MessageCircle, Send } from 'lucide-vue-next'
+import { MessageCircle, Pencil, Send, X } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,15 +10,19 @@ import { useChatsQuery } from '@/composables/useChats'
 import {
   useChatMessagesQuery,
   useChatMessagesSocket,
+  useEditMessageMutation,
   useSendMessageMutation,
 } from '@/composables/useMessages'
+import type { Message } from '@/api/messages'
 
 const { state: currentUserState } = useCurrentUserQuery()
 const { state: chatsState, asyncStatus: chatsStatus } = useChatsQuery()
 const messageText = ref('')
 const isCreateRoomOpen = ref(false)
 const activeChatId = ref<string | null>(null)
+const editingMessage = ref<Message | null>(null)
 const sendMessageMutation = useSendMessageMutation()
+const editMessageMutation = useEditMessageMutation()
 
 const chats = computed(() => chatsState.value.data ?? [])
 const currentUserId = computed(() => currentUserState.value.data?.id ?? null)
@@ -58,19 +62,36 @@ const chatTitle = computed(() => {
   return otherMembers.map((member) => member.username).join(', ') || 'Новый чат'
 })
 
-async function sendMessage() {
-  if (!activeChatId.value) {
-    return
-  }
+async function submitMessage() {
+  if (!activeChatId.value) return
 
   const text = messageText.value.trim()
   if (!text) return
 
-  await sendMessageMutation.mutateAsync({
-    chatId: activeChatId.value,
-    content: text,
-  })
+  if (editingMessage.value) {
+    await editMessageMutation.mutateAsync({
+      chatId: activeChatId.value,
+      messageId: editingMessage.value.id,
+      content: text,
+    })
+    editingMessage.value = null
+  } else {
+    await sendMessageMutation.mutateAsync({
+      chatId: activeChatId.value,
+      content: text,
+    })
+  }
 
+  messageText.value = ''
+}
+
+function startEditing(msg: Message) {
+  editingMessage.value = msg
+  messageText.value = msg.content
+}
+
+function cancelEditing() {
+  editingMessage.value = null
   messageText.value = ''
 }
 
@@ -161,9 +182,18 @@ function onChatCreated(chatId: string) {
           <div
             v-for="msg in activeMessages"
             :key="msg.id"
-            class="flex"
+            class="group flex items-center gap-1"
             :class="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'"
           >
+            <!-- Edit button (own messages — sits left of bubble) -->
+            <button
+              v-if="msg.senderId === currentUserId"
+              class="invisible rounded p-1 text-muted-foreground hover:text-foreground group-hover:visible"
+              @click="startEditing(msg)"
+            >
+              <Pencil class="h-3.5 w-3.5" />
+            </button>
+
             <div
               class="max-w-sm rounded-2xl px-4 py-2 text-sm"
               :class="msg.senderId === currentUserId
@@ -172,9 +202,10 @@ function onChatCreated(chatId: string) {
             >
               <p>{{ msg.content }}</p>
               <p
-                class="mt-1 text-right text-xs opacity-60"
+                class="mt-1 flex items-center justify-end gap-1 text-right text-xs opacity-60"
                 :class="msg.senderId === currentUserId ? 'text-primary-foreground' : 'text-muted-foreground'"
               >
+                <span v-if="msg.editedAt" class="italic">изменено</span>
                 {{ formatMessageTime(msg.createdAt) }}
               </p>
             </div>
@@ -182,9 +213,18 @@ function onChatCreated(chatId: string) {
         </div>
       </main>
 
+      <!-- Edit banner -->
+      <div v-if="editingMessage" class="flex items-center gap-2 border-t bg-muted/50 px-6 py-2 text-sm">
+        <Pencil class="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span class="flex-1 truncate text-muted-foreground">{{ editingMessage.content }}</span>
+        <button class="shrink-0 text-muted-foreground hover:text-foreground" @click="cancelEditing">
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+
       <!-- Input -->
       <footer class="border-t px-6 py-4">
-        <form class="flex items-center gap-3" @submit.prevent="sendMessage">
+        <form class="flex items-center gap-3" @submit.prevent="submitMessage">
           <Input
             v-model="messageText"
             placeholder="Напишите сообщение..."
@@ -195,7 +235,7 @@ function onChatCreated(chatId: string) {
           <Button
             type="submit"
             size="icon"
-            :disabled="!activeChatId || !messageText.trim() || sendMessageMutation.asyncStatus.value === 'loading'"
+            :disabled="!activeChatId || !messageText.trim() || sendMessageMutation.asyncStatus.value === 'loading' || editMessageMutation.asyncStatus.value === 'loading'"
           >
             <Send class="h-4 w-4" />
           </Button>

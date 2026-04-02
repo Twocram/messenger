@@ -3,6 +3,7 @@ import { Elysia, t } from "elysia";
 import { authMiddleware } from "../auth/middleware";
 import { AuthError } from "../auth/service";
 import {
+  editMessageBodyModel,
   messageErrorModel,
   messageModel,
   messageSocketEventModel,
@@ -78,6 +79,31 @@ export const messageModule = new Elysia({ prefix: "/chats/:chatId/messages" })
         200: messageModel,
         400: messageErrorModel,
         401: messageErrorModel,
+        404: messageErrorModel,
+        500: messageErrorModel,
+      },
+    },
+  )
+  .patch(
+    "/:messageId",
+    async ({ currentUser, params, body, set }) => {
+      try {
+        return await MessageService.editMessage(
+          params.messageId,
+          currentUser.id,
+          body,
+        );
+      } catch (error) {
+        return handleMessageError(error, set);
+      }
+    },
+    {
+      body: editMessageBodyModel,
+      response: {
+        200: messageModel,
+        400: messageErrorModel,
+        401: messageErrorModel,
+        403: messageErrorModel,
         404: messageErrorModel,
         500: messageErrorModel,
       },
