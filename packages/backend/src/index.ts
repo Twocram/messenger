@@ -12,6 +12,7 @@ import {
 import { authModule } from "./modules/auth";
 import { chatModule } from "./modules/chat";
 import { messageModule } from "./modules/message";
+import { userModule } from "./modules/user";
 
 const port = Number(process.env.PORT ?? "3000");
 const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
@@ -27,6 +28,7 @@ const app = new Elysia()
     }),
   )
   .use(authModule)
+  .use(userModule)
   .use(chatModule)
   .use(messageModule)
   .get("/", async () => {

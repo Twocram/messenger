@@ -17,5 +17,11 @@ export const messageErrorModel = t.Object({
   error: t.String(),
 });
 
+export const messageSocketEventModel = t.Object({
+  type: t.Literal("message:new"),
+  payload: messageModel,
+});
+
 export type MessageModel = Static<typeof messageModel>;
 export type SendMessageBodyModel = Static<typeof sendMessageBodyModel>;
+export type MessageSocketEventModel = Static<typeof messageSocketEventModel>;

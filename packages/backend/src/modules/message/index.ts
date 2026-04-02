@@ -5,6 +5,7 @@ import { AuthError } from "../auth/service";
 import {
   messageErrorModel,
   messageModel,
+  messageSocketEventModel,
   sendMessageBodyModel,
 } from "./model";
 import { MessageError, MessageService } from "./service";
@@ -24,6 +25,19 @@ function handleMessageError(
 
 export const messageModule = new Elysia({ prefix: "/chats/:chatId/messages" })
   .use(authMiddleware)
+  .ws("/ws", {
+    response: messageSocketEventModel,
+    async open(ws) {
+      await MessageService.subscribeToChat(
+        ws.data.params.chatId,
+        ws.data.currentUser.id,
+        ws,
+      );
+    },
+    close(ws) {
+      MessageService.unsubscribeFromChat(ws.data.params.chatId, ws.id);
+    },
+  })
   .get(
     "/",
     async ({ currentUser, params, set }) => {
