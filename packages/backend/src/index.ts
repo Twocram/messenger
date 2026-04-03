@@ -22,6 +22,51 @@ const apiPrefix = `/api/${apiVersion}`;
 await runMigrations();
 await getDatabaseStatus();
 
+function createApiModule(prefix = "") {
+  return new Elysia({ prefix })
+    .use(authModule)
+    .use(userModule)
+    .use(chatModule)
+    .use(messageModule)
+    .get("/", async () => {
+      const database = await getDatabaseStatus();
+
+      return {
+        message: "messenger API",
+        version: apiVersion,
+        database: database.currentDatabase,
+      };
+    })
+    .get("/users", async () => {
+      const result = await db.select({ value: count() }).from(schema.users);
+      const totalUsers = result[0]?.value ?? 0;
+
+      return {
+        totalUsers,
+      };
+    })
+    .get("/health", async ({ set }) => {
+      try {
+        const database = await getDatabaseStatus();
+
+        return {
+          status: "ok",
+          version: apiVersion,
+          database: database.currentDatabase,
+          checkedAt: database.now,
+        };
+      } catch (error) {
+        set.status = 503;
+
+        return {
+          status: "error",
+          message:
+            error instanceof Error ? error.message : "Unknown database error",
+        };
+      }
+    });
+}
+
 const app = new Elysia()
   .use(
     cors({
@@ -29,53 +74,13 @@ const app = new Elysia()
       credentials: true,
     }),
   )
-  .group(apiPrefix, (versionedApp) =>
-    versionedApp
-      .use(authModule)
-      .use(userModule)
-      .use(chatModule)
-      .use(messageModule)
-      .get("/", async () => {
-        const database = await getDatabaseStatus();
-
-        return {
-          message: "messenger API",
-          version: apiVersion,
-          database: database.currentDatabase,
-        };
-      })
-      .get("/users", async () => {
-        const result = await db.select({ value: count() }).from(schema.users);
-        const totalUsers = result[0]?.value ?? 0;
-
-        return {
-          totalUsers,
-        };
-      })
-      .get("/health", async ({ set }) => {
-        try {
-          const database = await getDatabaseStatus();
-
-          return {
-            status: "ok",
-            version: apiVersion,
-            database: database.currentDatabase,
-            checkedAt: database.now,
-          };
-        } catch (error) {
-          set.status = 503;
-
-          return {
-            status: "error",
-            message:
-              error instanceof Error ? error.message : "Unknown database error",
-          };
-        }
-      }),
-  )
+  // Temporary compatibility layer for existing clients using unversioned URLs.
+  .use(createApiModule())
+  .use(createApiModule(apiPrefix))
   .listen(port);
 
 console.log(`Backend running at http://localhost:${app.server?.port}${apiPrefix}`);
+console.log(`Legacy routes still available at http://localhost:${app.server?.port}`);
 
 process.on("SIGINT", async () => {
   await closeDatabaseConnection();
