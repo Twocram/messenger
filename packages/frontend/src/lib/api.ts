@@ -1,8 +1,7 @@
 import ky, { type HTTPError } from 'ky'
 
 import { markUnauthenticated } from './auth'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL, getApiUrl } from './api-url'
 
 export interface ApiErrorPayload {
   error?: string
@@ -48,7 +47,7 @@ async function toApiError(error: unknown) {
 async function refreshTokens() {
   if (!refreshRequest) {
     refreshRequest = ky
-      .post(`${API_URL}/auth/refresh`, {
+      .post(getApiUrl('auth/refresh'), {
         credentials: 'include',
       })
       .then((response) => {
@@ -73,7 +72,7 @@ async function refreshTokens() {
 }
 
 export const api = ky.create({
-  prefixUrl: API_URL,
+  prefixUrl: API_BASE_URL,
   credentials: 'include',
   retry: 0,
   hooks: {

@@ -1,7 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { getApiUrl } from './api-url'
 
 export function getWebSocketUrl(path: string) {
-  const url = new URL(path, API_URL)
+  const url = new URL(getApiUrl(path))
 
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
 

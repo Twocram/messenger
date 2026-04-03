@@ -1,6 +1,6 @@
-import ky from "ky"
+import ky from 'ky'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { getApiUrl } from './api-url'
 
 let authState: boolean | null = null
 let authCheckPromise: Promise<boolean> | null = null
@@ -11,9 +11,10 @@ export async function checkAuthSession(force = false) {
   }
 
   if (!authCheckPromise) {
-    authCheckPromise = ky.get(`${API_URL}/auth/me`, {
-      credentials: 'include',
-    })
+    authCheckPromise = ky
+      .get(getApiUrl('auth/me'), {
+        credentials: 'include',
+      })
       .then((response) => {
         authState = response.ok
         return authState
