@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { count } from "drizzle-orm";
+import logixlysia from "logixlysia";
 
 import {
   closeDatabaseConnection,
@@ -69,6 +70,16 @@ function createApiModule(prefix = "") {
 
 const app = new Elysia()
   .use(
+    logixlysia({
+      config: {
+        service: "messenger-backend",
+        showStartupMessage: true,
+        startupMessageFormat: "simple",
+        ip: true,
+      },
+    }),
+  )
+  .use(
     cors({
       origin: frontendUrl,
       credentials: true,
@@ -78,9 +89,6 @@ const app = new Elysia()
   .use(createApiModule())
   .use(createApiModule(apiPrefix))
   .listen(port);
-
-console.log(`Backend running at http://localhost:${app.server?.port}${apiPrefix}`);
-console.log(`Legacy routes still available at http://localhost:${app.server?.port}`);
 
 process.on("SIGINT", async () => {
   await closeDatabaseConnection();
