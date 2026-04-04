@@ -1,7 +1,7 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db, schema } from "../../db";
-import type { CreateChatBodyModel } from "./model";
+import type { CreateChatBodyModel, LastMessageModel } from "./model";
 
 export class ChatError extends Error {
   constructor(
@@ -56,10 +56,7 @@ export abstract class ChatService {
       allParticipantIds.map((userId) => ({ chatId: chat.id, userId })),
     );
 
-    return {
-      ...chat,
-      members: participants,
-    };
+    return Object.assign(chat, { members: participants, lastMessage: null });
   }
 
   static async getUserChats(userId: string) {
@@ -79,6 +76,14 @@ export abstract class ChatService {
       where: inArray(schema.chats.id, chatIds),
     });
 
+    const lastMessages = await db.execute(sql`
+      SELECT DISTINCT ON (chat_id) id, chat_id, sender_id, content, created_at
+      FROM messages
+      WHERE chat_id = ANY(${chatIds})
+      ORDER BY chat_id, created_at DESC      
+      `)
+
+
     // Get all members for these chats
     const allMembers = await db
       .select({
@@ -95,6 +100,15 @@ export abstract class ChatService {
       string,
       { id: string; username: string; avatarUrl: string | null }[]
     >();
+    const lastMessageByChat = new Map<string, LastMessageModel>();
+
+    for (const row of lastMessages) {
+      lastMessageByChat.set(row.chat_id as string, {
+        content: row.content as string,
+        senderId: row.sender_id as string,
+        createdAt: new Date(row.created_at as string),
+      });
+    }
 
     for (const { chatId, ...member } of allMembers) {
       const list = membersByChat.get(chatId) ?? [];
@@ -105,6 +119,7 @@ export abstract class ChatService {
     return chats.map((chat) =>
       Object.assign(chat, {
         members: membersByChat.get(chat.id) ?? [],
+        lastMessage: lastMessageByChat.get(chat.id) ?? null,
       }),
     );
   }
@@ -139,7 +154,24 @@ export abstract class ChatService {
       .innerJoin(schema.users, eq(schema.chatMembers.userId, schema.users.id))
       .where(eq(schema.chatMembers.chatId, chatId));
 
-    return { ...chat, members: rows };
+    const [lastMsg] = await db.execute(sql`
+      SELECT sender_id, content, created_at
+      FROM messages
+      WHERE chat_id = ${chatId}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+
+    return Object.assign(chat, {
+      members: rows,
+      lastMessage: lastMsg
+        ? {
+            content: lastMsg.content as string,
+            senderId: lastMsg.sender_id as string,
+            createdAt: new Date(lastMsg.created_at as string),
+          }
+        : null,
+    });
   }
 
   private static async findDirectChat(userA: string, userB: string) {
@@ -181,6 +213,6 @@ export abstract class ChatService {
       .innerJoin(schema.users, eq(schema.chatMembers.userId, schema.users.id))
       .where(eq(schema.chatMembers.chatId, chat.id));
 
-    return { ...chat, members: rows };
+    return Object.assign(chat, { members: rows, lastMessage: null });
   }
 }

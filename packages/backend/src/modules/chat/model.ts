@@ -6,6 +6,13 @@ export const chatMemberModel = t.Object({
   avatarUrl: t.Nullable(t.String()),
 });
 
+export const lastMessageModel = t.Nullable(t.Object({
+  content: t.String(),
+  senderId: t.String({ format: "uuid" }),
+  createdAt: t.Date(),
+}))
+
+
 export const chatModel = t.Object({
   id: t.String({ format: "uuid" }),
   name: t.Nullable(t.String()),
@@ -13,6 +20,7 @@ export const chatModel = t.Object({
   members: t.Array(chatMemberModel),
   createdAt: t.Date(),
   updatedAt: t.Date(),
+  lastMessage: lastMessageModel,
 });
 
 export const createChatBodyModel = t.Object({
@@ -24,6 +32,8 @@ export const chatErrorModel = t.Object({
   error: t.String(),
 });
 
+
 export type ChatMemberModel = Static<typeof chatMemberModel>;
 export type ChatModel = Static<typeof chatModel>;
 export type CreateChatBodyModel = Static<typeof createChatBodyModel>;
+export type LastMessageModel = Static<typeof lastMessageModel>;
