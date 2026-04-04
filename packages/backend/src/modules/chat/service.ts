@@ -79,9 +79,9 @@ export abstract class ChatService {
     const lastMessages = await db.execute(sql`
       SELECT DISTINCT ON (chat_id) id, chat_id, sender_id, content, created_at
       FROM messages
-      WHERE chat_id = ANY(${chatIds})
-      ORDER BY chat_id, created_at DESC      
-      `)
+      WHERE chat_id IN (${sql.join(chatIds.map((id) => sql`${id}`), sql`, `)})
+      ORDER BY chat_id, created_at DESC
+    `)
 
 
     // Get all members for these chats
