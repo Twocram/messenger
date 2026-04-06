@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
 import { count } from "drizzle-orm";
 import logixlysia from "logixlysia";
 
@@ -69,6 +70,23 @@ function createApiModule(prefix = "") {
 }
 
 const app = new Elysia()
+  .use(
+    swagger({
+      path: "/docs",
+      documentation: {
+        info: {
+          title: "Messenger API",
+          version: apiVersion,
+        },
+        tags: [
+          { name: "auth", description: "Authentication" },
+          { name: "users", description: "Users" },
+          { name: "chats", description: "Chats" },
+          { name: "messages", description: "Messages" },
+        ],
+      },
+    }),
+  )
   .use(
     logixlysia({
       config: {
